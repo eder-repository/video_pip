@@ -7,12 +7,15 @@ class PlayerScreen extends StatefulWidget {
       {Key? key,
       required this.assetVideo,
       this.height = 400,
-      required this.isRemove})
+      this.isRemove = false,
+      this.isPlay = true})
       : super(key: key);
 
   final String assetVideo;
   final double? height;
   final bool isRemove;
+  final bool isPlay;
+
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
@@ -44,59 +47,65 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Stack(
-        children: [
-          Column(
-            children: <Widget>[
-              Container(
-                clipBehavior: Clip.antiAlias,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.zero,
-                    topRight: Radius.zero,
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
-                  ),
-                ),
-                width: MediaQuery.of(context).size.width,
-                height: widget.height,
-                // padding: const EdgeInsets.all(20),
-                child: AspectRatio(
-                  aspectRatio: _controller.value.aspectRatio,
-                  child: Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: <Widget>[
-                      VideoPlayer(_controller),
-                      _ControlsOverlay(controller: _controller),
-                      VideoProgressIndicator(_controller, allowScrubbing: true),
-                    ],
-                  ),
+    super.build(context);
+    return Stack(
+      children: [
+        Column(
+          children: <Widget>[
+            Container(
+              // clipBehavior: Clip.antiAlias,
+              decoration: const BoxDecoration(
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.zero,
+                  topRight: Radius.zero,
+                  bottomLeft: Radius.circular(20),
+                  bottomRight: Radius.circular(20),
                 ),
               ),
-            ],
-          ),
-          if (!widget.isRemove)
-            Positioned(
-                bottom: 10,
-                right: 10,
-                child: GestureDetector(
-                  onTap: () {
-                    Route route = MaterialPageRoute(
-                        builder: (context) => FullScreen(
-                              assetImg: widget.assetVideo,
-                            ));
-                    Navigator.push(context, route);
-                  },
-                  child: const CircleAvatar(
-                    child: Icon(
-                      Icons.fullscreen_exit,
-                      color: Colors.blueAccent,
-                    ),
+              width: MediaQuery.of(context).size.width,
+              height: widget.height,
+              // padding: const EdgeInsets.all(20),
+              child: Container(
+                height: widget.height,
+                child: AspectRatio(
+                  aspectRatio: 8 / 7,
+                  child: LayoutBuilder(builder: (context, x) {
+                    return Stack(
+                      alignment: Alignment.bottomCenter,
+                      children: <Widget>[
+                        VideoPlayer(_controller),
+                        if (widget.isPlay)
+                          _ControlsOverlay(controller: _controller),
+                        VideoProgressIndicator(_controller,
+                            allowScrubbing: true),
+                      ],
+                    );
+                  }),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (widget.isRemove)
+          Positioned(
+              bottom: 10,
+              right: 10,
+              child: GestureDetector(
+                onTap: () {
+                  Route route = MaterialPageRoute(
+                      builder: (context) => FullScreen(
+                            assetImg: widget.assetVideo,
+                          ));
+                  Navigator.push(context, route);
+                },
+                child: const CircleAvatar(
+                  child: Icon(
+                    Icons.fullscreen_exit,
+                    color: Colors.blueAccent,
                   ),
-                )),
-        ],
-      ),
+                ),
+              )),
+      ],
     );
   }
 }

@@ -61,38 +61,47 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
         title: 'Material App',
-        home: Scaffold(
-          body: PIPView(
-              floatingHeight: 500,
-              floatingWidth: 400,
-              builder: (context, isFloating) {
-                return Column(
-                  children: [
-                    if (isFloating)
-                      const Expanded(
-                        child: PlayerScreen(
-                            assetVideo: 'assets/video/test.mp4',
-                            isRemove: true),
-                      )
-                    else
-                      Expanded(
-                          child: Column(
-                        children: [
-                          const PlayerScreen(
-                              assetVideo: 'assets/video/test.mp4',
-                              isRemove: true),
-                          MaterialButton(
-                            child: Text('Start floating'),
-                            onPressed: () {
-                              PIPView.of(context)
-                                  ?.presentBelow(MyBackgroundScreen());
-                            },
-                          ),
-                        ],
-                      )),
-                  ],
+        home: SafeArea(
+          child: Scaffold(
+            body: Center(
+              child: LayoutBuilder(builder: (context, c) {
+                return Center(
+                  child: PIPView(
+                      floatingHeight: 150,
+                      floatingWidth: 300,
+                      builder: (context, isFloating) {
+                        return Column(
+                          children: [
+                            if (isFloating)
+                              PlayerScreen(
+                                height: 150,
+                                assetVideo: 'assets/video/test.mp4',
+                                isPlay: false,
+                              )
+                            else
+                              Expanded(
+                                  child: Column(
+                                children: [
+                                  const PlayerScreen(
+                                    height: 200,
+                                    assetVideo: 'assets/video/test.mp4',
+                                  ),
+                                  MaterialButton(
+                                    child: Text('Start floating'),
+                                    onPressed: () {
+                                      PIPView.of(context)
+                                          ?.presentBelow(MyBackgroundScreen());
+                                    },
+                                  ),
+                                ],
+                              )),
+                          ],
+                        );
+                      }),
                 );
               }),
+            ),
+          ),
         ));
   }
 
