@@ -59,6 +59,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final height = 150.0;
     return MaterialApp(
         title: 'Material App',
         home: SafeArea(
@@ -67,35 +68,37 @@ class _MyAppState extends State<MyApp> {
               child: LayoutBuilder(builder: (context, c) {
                 return Center(
                   child: PIPView(
-                      floatingHeight: 150,
+                      floatingHeight: height,
                       floatingWidth: 300,
                       builder: (context, isFloating) {
-                        return Column(
-                          children: [
-                            if (isFloating)
-                              PlayerScreen(
-                                height: 150,
-                                assetVideo: 'assets/video/test.mp4',
-                                isPlay: false,
-                              )
-                            else
-                              Expanded(
-                                  child: Column(
-                                children: [
-                                  const PlayerScreen(
-                                    height: 200,
-                                    assetVideo: 'assets/video/test.mp4',
-                                  ),
-                                  MaterialButton(
-                                    child: Text('Start floating'),
-                                    onPressed: () {
-                                      PIPView.of(context)
-                                          ?.presentBelow(MyBackgroundScreen());
-                                    },
-                                  ),
-                                ],
-                              )),
-                          ],
+                        return SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              if (isFloating)
+                                PlayerScreen(
+                                  height: height,
+                                  assetVideo: 'assets/video/test.mp4',
+                                  isPlay: false,
+                                )
+                              else
+                                SingleChildScrollView(
+                                    child: Column(
+                                  children: [
+                                    const PlayerScreen(
+                                      height: 200,
+                                      assetVideo: 'assets/video/test.mp4',
+                                    ),
+                                    MaterialButton(
+                                      child: Text('Start floating'),
+                                      onPressed: () {
+                                        PIPView.of(context)?.presentBelow(
+                                            MyBackgroundScreen());
+                                      },
+                                    ),
+                                  ],
+                                )),
+                            ],
+                          ),
                         );
                       }),
                 );

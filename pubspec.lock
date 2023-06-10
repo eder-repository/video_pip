@@ -147,7 +147,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: ea232c4942a94443a0ac2a968f991e49842876c1
+      resolved-ref: d89580f277b756c60ce9ffe108e1cb71e75e59df
       url: "https://github.com/eder-repository/pip_view_r10"
     source: git
     version: "0.9.7"
