@@ -1,7 +1,10 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pip_view/pip_view.dart';
+import 'package:youtobe_example/bloc/video/video_bloc.dart';
+import 'package:youtobe_example/video_widget/new_page.dart';
 import 'package:youtobe_example/video_widget/player_screen.dart';
 import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 // import 'package:pip_view/pip_view.dart';
@@ -60,52 +63,53 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     final height = 150.0;
-    return MaterialApp(
-        title: 'Material App',
-        home: SafeArea(
-          child: Scaffold(
-            body: Center(
-              child: LayoutBuilder(builder: (context, c) {
-                return Center(
-                  child: PIPView(
-                      floatingHeight: height,
-                      floatingWidth: 300,
-                      builder: (context, isFloating) {
-                        return SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              if (isFloating)
-                                PlayerScreen(
-                                  height: height,
-                                  assetVideo: 'assets/video/test.mp4',
-                                  isPlay: false,
-                                )
-                              else
-                                SingleChildScrollView(
-                                    child: Column(
+    return BlocProvider(
+      create: (context) => VideoBloc(),
+      child: MaterialApp(
+          title: 'Material App',
+          home: SafeArea(
+            child: BlocBuilder<VideoBloc, VideoState>(
+              builder: (context, state) {
+                return Scaffold(
+                  body: Center(
+                    child: LayoutBuilder(builder: (context, c) {
+                      return Center(
+                        child: PIPView(
+                            onPlay: () {
+                              final bloc = context.read<VideoBloc>();
+
+                              bloc
+                                ..add(const VideoEvent.play())
+                                ..add(const VideoEvent.detectPlay());
+                            },
+                            floatingHeight: height,
+                            floatingWidth: 300,
+                            isPlaying: state.isPlaying,
+                            builder: (context, isFloating) {
+                              return SingleChildScrollView(
+                                child: Column(
                                   children: [
-                                    const PlayerScreen(
-                                      height: 200,
+                                    PlayerScreen(
+                                      height: isFloating ? height : 200,
                                       assetVideo: 'assets/video/test.mp4',
-                                    ),
-                                    MaterialButton(
-                                      child: Text('Start floating'),
-                                      onPressed: () {
+                                      isPlay: isFloating ? false : true,
+                                      extendVideo: () {
                                         PIPView.of(context)?.presentBelow(
                                             MyBackgroundScreen());
                                       },
                                     ),
                                   ],
-                                )),
-                            ],
-                          ),
-                        );
-                      }),
+                                ),
+                              );
+                            }),
+                      );
+                    }),
+                  ),
                 );
-              }),
+              },
             ),
-          ),
-        ));
+          )),
+    );
   }
 
   @override
@@ -119,7 +123,20 @@ class MyBackgroundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Text('This is my background screen!'),
+      body: Column(
+        children: [
+          Text('This is my background screen!'),
+          MaterialButton(
+              child: Text('navegar'),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => NewScreen(),
+                  ),
+                );
+              })
+        ],
+      ),
     );
   }
 }

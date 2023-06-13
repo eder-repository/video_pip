@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:video_player/video_player.dart';
+import 'package:youtobe_example/bloc/video/video_bloc.dart';
 import 'package:youtobe_example/video_widget/full_screen.dart';
 
 class PlayerScreen extends StatefulWidget {
@@ -8,13 +10,15 @@ class PlayerScreen extends StatefulWidget {
       required this.assetVideo,
       this.height = 400,
       this.isRemove = false,
-      this.isPlay = true})
+      this.isPlay = true,
+      this.extendVideo})
       : super(key: key);
 
   final String assetVideo;
   final double? height;
   final bool isRemove;
   final bool isPlay;
+  final VoidCallback? extendVideo;
 
   @override
   State<PlayerScreen> createState() => _PlayerScreenState();
@@ -22,23 +26,25 @@ class PlayerScreen extends StatefulWidget {
 
 class _PlayerScreenState extends State<PlayerScreen>
     with AutomaticKeepAliveClientMixin {
-  late VideoPlayerController _controller;
-
+  late bool click = false;
   @override
   void initState() {
     super.initState();
-    _controller = VideoPlayerController.asset(widget.assetVideo);
+    final bloc = context.read<VideoBloc>();
 
-    _controller.addListener(() {
+    bloc.init(widget.assetVideo);
+    print('object');
+
+    bloc.controller.addListener(() {
       setState(() {});
     });
-    _controller.setLooping(true);
-    _controller.initialize().then((_) => setState(() {}));
+    bloc.controller.setLooping(true);
+    bloc.controller.initialize().then((_) => setState(() {}));
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    context.read<VideoBloc>().controller.dispose();
     super.dispose();
   }
 
@@ -47,72 +53,96 @@ class _PlayerScreenState extends State<PlayerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bloc = context.read<VideoBloc>();
     super.build(context);
-    return Stack(
-      children: [
-        Column(
-          children: <Widget>[
-            Container(
-              // clipBehavior: Clip.antiAlias,
-              decoration: const BoxDecoration(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.zero,
-                  topRight: Radius.zero,
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              width: MediaQuery.of(context).size.width,
-              height: widget.height,
-              // padding: const EdgeInsets.all(20),
-              child: Container(
-                height: widget.height,
-                child: AspectRatio(
-                  aspectRatio: 8 / 7,
-                  child: LayoutBuilder(builder: (context, x) {
-                    return Stack(
-                      alignment: Alignment.bottomCenter,
-                      children: <Widget>[
-                        VideoPlayer(_controller),
-                        if (widget.isPlay)
-                          _ControlsOverlay(controller: _controller),
-                        VideoProgressIndicator(_controller,
-                            allowScrubbing: true),
-                      ],
-                    );
-                  }),
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (widget.isRemove)
-          Positioned(
-              bottom: 10,
-              right: 10,
-              child: GestureDetector(
-                onTap: () {
-                  Route route = MaterialPageRoute(
-                      builder: (context) => FullScreen(
-                            assetImg: widget.assetVideo,
-                          ));
-                  Navigator.push(context, route);
-                },
-                child: const CircleAvatar(
-                  child: Icon(
-                    Icons.fullscreen_exit,
-                    color: Colors.blueAccent,
+    return GestureDetector(
+      onTap: () {
+        click = !click;
+        print(click);
+        setState(() {});
+        if (click) {
+          Future.delayed(const Duration(seconds: 2)).then((value) {
+            click = false;
+            setState(() {});
+          });
+        }
+      },
+      child: Stack(
+        children: [
+          Column(
+            children: <Widget>[
+              Container(
+                // clipBehavior: Clip.antiAlias,
+                decoration: const BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.zero,
+                    topRight: Radius.zero,
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
                   ),
                 ),
-              )),
-      ],
+                width: MediaQuery.of(context).size.width,
+                height: widget.height,
+                // padding: const EdgeInsets.all(20),
+                child: Container(
+                  height: widget.height,
+                  child: AspectRatio(
+                    aspectRatio: 8 / 7,
+                    child: LayoutBuilder(builder: (context, x) {
+                      return Stack(
+                        alignment: Alignment.bottomCenter,
+                        children: <Widget>[
+                          VideoPlayer(bloc.controller),
+                          if (widget.isPlay)
+                            _ControlsOverlay(
+                              click: click,
+                              controller: bloc.controller,
+                              extendVideo: widget.extendVideo,
+                            ),
+                          VideoProgressIndicator(bloc.controller,
+                              allowScrubbing: true),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (widget.isRemove)
+            Positioned(
+                bottom: 10,
+                right: 10,
+                child: GestureDetector(
+                  onTap: () {
+                    Route route = MaterialPageRoute(
+                        builder: (context) => FullScreen(
+                              assetImg: widget.assetVideo,
+                            ));
+                    Navigator.push(context, route);
+                  },
+                  child: const CircleAvatar(
+                    child: Icon(
+                      Icons.fullscreen_exit,
+                      color: Colors.blueAccent,
+                    ),
+                  ),
+                )),
+        ],
+      ),
     );
   }
 }
 
 class _ControlsOverlay extends StatelessWidget {
-  const _ControlsOverlay({Key? key, required this.controller})
+  const _ControlsOverlay(
+      {Key? key,
+      required this.controller,
+      this.extendVideo,
+      required this.click})
       : super(key: key);
+  final VoidCallback? extendVideo;
+  final bool click;
 
   static const List<Duration> _exampleCaptionOffsets = <Duration>[
     Duration(seconds: -10),
@@ -140,30 +170,64 @@ class _ControlsOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = context.read<VideoBloc>();
     return Stack(
       children: <Widget>[
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 50),
           reverseDuration: const Duration(milliseconds: 200),
-          child: controller.value.isPlaying
-              ? const SizedBox.shrink()
-              : Container(
-                  color: Colors.black26,
-                  child: const Center(
+          child: Stack(
+            children: [
+              if (click) ...[
+                Container(
+                  color: Colors.grey.withOpacity(.3),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    bloc.add(const VideoEvent.play());
+                  },
+                  child: Center(
                     child: Icon(
-                      Icons.play_arrow,
+                      controller.value.isPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow,
+                      size: 50,
                       color: Colors.white,
-                      size: 100.0,
-                      semanticLabel: 'Play',
                     ),
                   ),
                 ),
+                GestureDetector(
+                  onTap: extendVideo,
+                  child: const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Align(
+                      alignment: Alignment.bottomRight,
+                      child: Icon(
+                        Icons.picture_in_picture,
+                        size: 30,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+
+                //          click = !click;
+                // print(click);
+                // setState(() {});
+                // if (click)
+                //   Future.delayed(Duration(seconds: 2)).then((value) {
+                //     click = false;
+                //     setState(() {});
+                //   });
+              ]
+            ],
+          ),
         ),
-        GestureDetector(
-          onTap: () {
-            controller.value.isPlaying ? controller.pause() : controller.play();
-          },
-        ),
+        // GestureDetector(
+        //   onTap: () {
+        //     bloc.add(const VideoEvent.play());
+        //   },
+        // ),
         // Align(
         //   alignment: Alignment.topLeft,
         //   child: PopupMenuButton<Duration>(
@@ -193,35 +257,42 @@ class _ControlsOverlay extends StatelessWidget {
         //     ),
         //   ),
         // ),
-        Align(
-          alignment: Alignment.topRight,
-          child: PopupMenuButton<double>(
-            initialValue: controller.value.playbackSpeed,
-            tooltip: 'Playback speed',
-            onSelected: (double speed) {
-              controller.setPlaybackSpeed(speed);
-            },
-            itemBuilder: (BuildContext context) {
-              return <PopupMenuItem<double>>[
-                for (final double speed in _examplePlaybackRates)
-                  PopupMenuItem<double>(
-                    value: speed,
-                    child: Text('${speed}x'),
-                  )
-              ];
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                // Using less vertical padding as the text is also longer
-                // horizontally, so it feels like it would need more spacing
-                // horizontally (matching the aspect ratio of the video).
-                vertical: 12,
-                horizontal: 16,
+        if (click)
+          Align(
+            alignment: Alignment.topRight,
+            child: PopupMenuButton<double>(
+              initialValue: bloc.controller.value.playbackSpeed,
+              tooltip: 'Playback speed',
+              onSelected: (double speed) {
+                controller.setPlaybackSpeed(speed);
+              },
+              itemBuilder: (BuildContext context) {
+                return <PopupMenuItem<double>>[
+                  for (final double speed
+                      in _ControlsOverlay._examplePlaybackRates)
+                    PopupMenuItem<double>(
+                      value: speed,
+                      child: Text(
+                        '${speed}x',
+                      ),
+                    )
+                ];
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  // Using less vertical padding as the text is also longer
+                  // horizontally, so it feels like it would need more spacing
+                  // horizontally (matching the aspect ratio of the video).
+                  vertical: 12,
+                  horizontal: 16,
+                ),
+                child: Text(
+                  '${controller.value.playbackSpeed}x',
+                  style: const TextStyle(color: Colors.white),
+                ),
               ),
-              child: Text('${controller.value.playbackSpeed}x'),
             ),
           ),
-        ),
       ],
     );
   }
